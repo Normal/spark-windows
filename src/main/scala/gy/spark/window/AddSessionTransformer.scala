@@ -12,6 +12,9 @@ class AddSessionTransformer(spark: SparkSession) {
 
     eventsDF.createOrReplaceTempView("events")
 
+    // TODO: order events by category and events_time asc - iterate using lag
+    // TODO: if session - prev_session > 5 or prev_brand != brand then new session
+
     val randUid = udf(() => UUID.randomUUID().toString.substring(0, 5))
 
     val sessionDF = eventsDF
@@ -24,26 +27,28 @@ class AddSessionTransformer(spark: SparkSession) {
         col("window.start") as "sessionStartTime",
         col("window.end") as "sessionEndTime"
       )
-    sessionDF.createOrReplaceTempView("sessions")
+    sessionDF
 
-    val fields = List(
-      "events.category",
-      "events.product",
-      "events.userId",
-      "events.eventTime",
-      "events.eventType",
-      "sessions.sessionId",
-      "sessions.sessionStartTime",
-      "sessions.sessionEndTime"
-    ).mkString(",")
-
-    val joinClauses = List(
-      "events.userId == sessions.userId",
-      "events.category == sessions.category",
-      "events.eventTime < sessions.sessionEndTime",
-      "events.eventTime >= sessions.sessionStartTime"
-    ).mkString(" AND ")
-
-    spark.sql(s"SELECT $fields FROM events LEFT JOIN sessions ON $joinClauses")
+//      .createOrReplaceTempView("sessions")
+//
+//    val fields = List(
+//      "events.category",
+//      "events.product",
+//      "events.userId",
+//      "events.eventTime",
+//      "events.eventType",
+//      "sessions.sessionId",
+//      "sessions.sessionStartTime",
+//      "sessions.sessionEndTime"
+//    ).mkString(",")
+//
+//    val joinClauses = List(
+//      "events.userId == sessions.userId",
+//      "events.category == sessions.category",
+//      "events.eventTime < sessions.sessionEndTime",
+//      "events.eventTime >= sessions.sessionStartTime"
+//    ).mkString(" AND ")
+//
+//    spark.sql(s"SELECT $fields FROM events LEFT JOIN sessions ON $joinClauses")
   }
 }
