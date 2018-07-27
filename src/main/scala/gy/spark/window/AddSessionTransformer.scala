@@ -14,6 +14,7 @@ class AddSessionTransformer(spark: SparkSession) {
 
     // TODO: order events by category and events_time asc - iterate using lag
     // TODO: if session - prev_session > 5 or prev_brand != brand then new session
+    // http://www.janvsmachine.net/2017/09/sessionization-with-spark.html
 
     val randUid = udf(() => UUID.randomUUID().toString.substring(0, 5))
 
