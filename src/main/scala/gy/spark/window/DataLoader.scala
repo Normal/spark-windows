@@ -13,7 +13,6 @@ class DataLoader(spark: SparkSession) {
     StructField("eventType", StringType, nullable = true)
   ))
 
-
   def load(file: String, delimiter: String, withHeader: Boolean): DataFrame = {
     spark.read.format("csv")
       .options(Map("header" -> withHeader.toString, "delimiter" -> delimiter, "quote" -> "\u0000"))
