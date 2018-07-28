@@ -18,6 +18,7 @@ object AppLauncher {
 
     val dataLoader = new DataLoader(spark)
     val sessionAdder = new AddSessionTransformer(spark)
+    val medianDuration = new MedianDurationTransformer(spark)
 
     val df = dataLoader.load(
       file = config.getString("data.file_path"),
@@ -31,6 +32,11 @@ object AppLauncher {
     val sessionDF = sessionAdder.transform(df).persist()
     logger.info("Session data: ")
     sessionDF.show(30)
+
+    logger.info("Calculate medians ...")
+    val medianDF = medianDuration.transform(sessionDF)
+    logger.info("Median data: ")
+    medianDF.show(30)
   }
 
 }

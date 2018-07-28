@@ -7,7 +7,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class AddSessionTransformer(spark: SparkSession) {
 
-  def transform(eventsDF: DataFrame): DataFrame = {
+  def transform(eventDF: DataFrame): DataFrame = {
 
     import org.apache.spark.sql.functions._
     import spark.implicits._
@@ -18,7 +18,7 @@ class AddSessionTransformer(spark: SparkSession) {
 
     val randUid = udf(() => UUID.randomUUID().toString.substring(0, 5))
 
-    eventsDF
+    eventDF
       .select(
         col("category"),
         col("product"),
