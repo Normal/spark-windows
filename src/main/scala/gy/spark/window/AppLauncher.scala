@@ -24,9 +24,10 @@ object AppLauncher {
       delimiter = config.getString("data.delimiter"),
       withHeader = config.getBoolean("data.header")
     )
-    df.show()
+    df.show(30)
 
-    sessionAdder.transform(df).show()
+    val sessionDF = sessionAdder.transform(df).persist()
+    sessionDF.show(30)
   }
 
 }
