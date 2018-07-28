@@ -19,7 +19,7 @@ object AppLauncher {
     val dataLoader = new DataLoader(spark)
     val sessionAdder = new AddSessionTransformer(spark)
     val medianDuration = new MedianDurationTransformer(spark)
-    val userRank = new UserRankTransformer(spark)
+    val userBucketing = new UserBucketingTransformer(spark)
 
     val df = dataLoader.load(
       file = config.getString("data.file_path"),
@@ -39,10 +39,10 @@ object AppLauncher {
     logger.info("Median data: ")
     medianDF.show(30)
 
-    logger.info("Calculate users rank ...")
-    val userRankDF = userRank.transform(sessionDF)
-    logger.info("User rank data: ")
-    userRankDF.show(30)
+    logger.info("Calculate users buckets ...")
+    val userBucketDF = userBucketing.transform(sessionDF)
+    logger.info("User bucket data: ")
+    userBucketDF.show(30)
   }
 
 }
