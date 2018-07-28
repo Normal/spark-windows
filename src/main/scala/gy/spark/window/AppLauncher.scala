@@ -20,29 +20,35 @@ object AppLauncher {
     val sessionAdder = new AddSessionTransformer(spark)
     val medianDuration = new MedianDurationTransformer(spark)
     val userBucketing = new UserBucketingTransformer(spark)
+    val productRanking = new ProductRankingTransformer(spark)
 
     val df = dataLoader.load(
       file = config.getString("data.file_path"),
       delimiter = config.getString("data.delimiter"),
       withHeader = config.getBoolean("data.header")
-    )
+    ).persist()
     logger.info("Input data: ")
     df.show(30)
 
-    logger.info("Calculate sessions ...")
-    val sessionDF = sessionAdder.transform(df).persist()
-    logger.info("Session data: ")
-    sessionDF.show(30)
+//    logger.info("Calculate sessions ...")
+//    val sessionDF = sessionAdder.transform(df).persist()
+//    logger.info("Session data: ")
+//    sessionDF.show(30)
 
-    logger.info("Calculate medians ...")
-    val medianDF = medianDuration.transform(sessionDF)
-    logger.info("Median data: ")
-    medianDF.show(30)
+//    logger.info("Calculate medians ...")
+//    val medianDF = medianDuration.transform(sessionDF)
+//    logger.info("Median data: ")
+//    medianDF.show(30)
+//
+//    logger.info("Calculate users buckets ...")
+//    val userBucketDF = userBucketing.transform(sessionDF)
+//    logger.info("User bucket data: ")
+//    userBucketDF.show(30)
 
-    logger.info("Calculate users buckets ...")
-    val userBucketDF = userBucketing.transform(sessionDF)
-    logger.info("User bucket data: ")
-    userBucketDF.show(30)
+    logger.info("Calculate products rankings ...")
+    val productRankDF = productRanking.transform(df)
+    logger.info("Product ranks data: ")
+    productRankDF.show(30)
   }
 
 }
