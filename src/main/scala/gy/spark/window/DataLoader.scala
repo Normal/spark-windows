@@ -3,7 +3,7 @@ package gy.spark.window
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class DataLoader(spark: SparkSession) {
+class DataLoader(implicit spark: SparkSession) {
 
   val eventsSchema = StructType(Array(
     StructField("category", StringType, nullable = false),

@@ -1,9 +1,9 @@
-package gy.spark.window
+package gy.spark.window.pipeline
 
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class ProductRankingTransformer(spark: SparkSession) {
+class ProductRankingTransformer(top: Int)(implicit spark: SparkSession) {
 
   def transform(eventsDF: DataFrame): DataFrame = {
 
@@ -53,7 +53,7 @@ class ProductRankingTransformer(spark: SparkSession) {
       .withColumn("rank", rank.over(categoryWindow))
 
     rankedDF
-        .filter(col("rank") <= 2)
+        .filter(col("rank") <= top)
         .select("category", "product")
         .orderBy("category", "rank")
 

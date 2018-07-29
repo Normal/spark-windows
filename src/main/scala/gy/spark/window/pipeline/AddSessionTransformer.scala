@@ -1,22 +1,21 @@
-package gy.spark.window
+package gy.spark.window.pipeline
 
 import java.util.UUID
 
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class AddSessionTransformer(spark: SparkSession) {
+class AddSessionTransformer()(implicit spark: SparkSession) {
 
   def transform(eventDF: DataFrame): DataFrame = {
 
     import org.apache.spark.sql.functions._
     import spark.implicits._
 
-
     val userCategoryWindow = Window.partitionBy("category", "userId").orderBy("eventTime")
     val sessionWindow = Window.partitionBy("sessionId")
 
-    val randUid = udf(() => UUID.randomUUID().toString.substring(0, 5))
+    val randUid = udf(() => UUID.randomUUID().toString.substring(0, 13))
 
     eventDF
       .select(

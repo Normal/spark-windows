@@ -1,9 +1,9 @@
-package gy.spark.window
+package gy.spark.window.pipeline
 
 import org.apache.spark.sql.types.DecimalType
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class MedianDurationTransformer(spark: SparkSession) {
+class MedianDurationTransformer(implicit spark: SparkSession) {
 
   def transform(sessionDF: DataFrame): DataFrame = {
 
