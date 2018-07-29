@@ -40,6 +40,14 @@ class AddSessionTransformer()(implicit spark: SparkSession) {
     /*
         Assumed that sessions with only one event has same start-end time and 0 duration.
 
+        Spark df api variant:
+          val sessionWindow = Window.partitionBy("sessionId")
+          sessionIdDF
+            .withColumn("sessionStartTime", min("eventTime").over(sessionWindow))
+            .withColumn("sessionEndTime", max("eventTime").over(sessionWindow))
+            .orderBy($"sessionStartTime", $"sessionId", $"eventTime")
+
+
         |category|product|userId|eventTime|eventType|sessionId|sessionStartTime|sessionEndTime|
     */
     sessionIdDF.createTempView("sessions")

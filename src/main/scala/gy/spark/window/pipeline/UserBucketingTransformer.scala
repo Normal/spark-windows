@@ -10,6 +10,11 @@ class UserBucketingTransformer(implicit spark: SparkSession) {
     import org.apache.spark.sql.functions._
     import spark.implicits._
 
+    /*
+        Calculates hom many minutes each user spent in each category.
+
+        |category|userId|userSpentMin|
+     */
     val totalUsageDF = sessionDF
       .withColumn("sessionDurationSec", unix_timestamp($"sessionEndTime") - unix_timestamp($"sessionStartTime"))
       .select("category", "userId", "sessionId", "sessionDurationSec")
@@ -17,7 +22,6 @@ class UserBucketingTransformer(implicit spark: SparkSession) {
       .groupBy("category", "userId")
       .agg((sum("sessionDurationSec") / 60).cast(DecimalType(32, 2)).as("userSpentMin"))
       .select("category", "userId", "userSpentMin")
-  // DEBUG    totalUsageDF.show(30)
 
     val bucketing = udf((minutes: Double) => minutes match {
       case x if x < 1.0 => 1
@@ -27,14 +31,22 @@ class UserBucketingTransformer(implicit spark: SparkSession) {
 
     totalUsageDF.createTempView("total_usage")
     spark.udf.register("bucketing", bucketing)
+
+    /*
+        Put users into "buckets" defined by "bucketing" UDF.
+        Then count size of each bucket.
+
+        |category|less_than_1|from_1_to_5|more_than_5|
+     */
     val query =
       """
-        |select category,
-        |count(case when bucketing(userSpentMin) == 1 then userId end) as less_than_1,
-        |count(case when bucketing(userSpentMin) == 2 then userId end) as from_1_to_5,
-        |count(case when bucketing(userSpentMin) == 3 then userId end) as more_than_5
-        |from total_usage
-        |group by category
+        |SELECT
+        | category,
+        | count(case when bucketing(userSpentMin) == 1 then userId end) as less_than_1,
+        | count(case when bucketing(userSpentMin) == 2 then userId end) as from_1_to_5,
+        | count(case when bucketing(userSpentMin) == 3 then userId end) as more_than_5
+        |FROM total_usage
+        |GROUP BY category
       """.stripMargin
 
     spark.sql(query)
