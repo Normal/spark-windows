@@ -12,26 +12,46 @@ class AddSessionTransformer()(implicit spark: SparkSession) {
     import org.apache.spark.sql.functions._
     import spark.implicits._
 
-    val userCategoryWindow = Window.partitionBy("category", "userId").orderBy("eventTime")
-    val sessionWindow = Window.partitionBy("sessionId")
-
+    val windowSpec = Window.partitionBy("category", "userId").orderBy("eventTime")
     val randUid = udf(() => UUID.randomUUID().toString.substring(0, 13))
 
-    eventDF
-      .select(
-        col("category"),
-        col("product"),
-        col("userId"),
-        col("eventTime"),
-        col("eventType"),
-        lag("eventTime", 1).over(userCategoryWindow).as("prevEventTime")
+    /*
+        Calculates session grouping by userId and category.
+        If distance between 2 particular events inside any group is more than 5 minutes (300 sec)
+        that means new session was started.
+
+        |category|product|userId|eventTime|eventType|sessionId|
+     */
+    val sessionIdDF = eventDF
+      .withColumn(
+        "newSessionId",
+        when(
+          unix_timestamp($"eventTime") - unix_timestamp(lag("eventTime", 1)
+            .over(windowSpec)) < 300, lit(null)
+        ).otherwise(randUid())
       )
-      .withColumn("isNewSession", when(unix_timestamp($"eventTime") - unix_timestamp($"prevEventTime") < 300, lit(0)).otherwise(lit(1)))
-      .withColumn("randId", randUid())
-      .withColumn("sessionId", when(col("isNewSession") === lit(1), col("randId")).otherwise(first("randId").over(userCategoryWindow)))
-      .withColumn("sessionStartTime", min("eventTime").over(sessionWindow))
-      .withColumn("sessionEndTime", max("eventTime").over(sessionWindow))
-      .drop("isNewSession", "randId", "prevEventTime")
-      .orderBy($"sessionStartTime", $"sessionId", $"eventTime")
+      .withColumn(
+        "sessionId",
+        last($"newSessionId", ignoreNulls = true)
+          .over(windowSpec.rowsBetween(Window.unboundedPreceding, 0))
+      )
+      .drop("newSessionId")
+
+    /*
+        Assumed that sessions with only one event has same start-end time and 0 duration.
+
+        |category|product|userId|eventTime|eventType|sessionId|sessionStartTime|sessionEndTime|
+    */
+    sessionIdDF.createTempView("sessions")
+    val sql =
+      """
+        |SELECT
+        | *,
+        | min(eventTime) OVER (PARTITION BY sessionId) AS sessionStartTime,
+        | max(eventTime) OVER (PARTITION BY sessionId) AS sessionEndTime
+        |FROM sessions
+        |ORDER BY sessionStartTime, sessionId, eventTime
+      """.stripMargin
+    spark.sql(sql)
   }
 }
