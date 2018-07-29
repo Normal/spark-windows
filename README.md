@@ -4,6 +4,11 @@
 - spark 2.3
 - java 6+
 
+## Run locally with IDE (checked on intellij idea)
+
+- checkout git branch _ide-run_
+- just run _AppLauncher_ class
+
 ## Run locally with spark
 
 - `sbt assembly`

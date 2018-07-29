@@ -11,8 +11,8 @@ val versions = new {
 
 libraryDependencies ++= Seq(
   //spark binaries
-  "org.apache.spark" %% "spark-sql" % versions.spark,
-  "org.apache.spark" %% "spark-hive" % versions.spark,
+  "org.apache.spark" %% "spark-sql" % versions.spark % "provided",
+  "org.apache.spark" %% "spark-hive" % versions.spark % "provided",
 
   //utils
   "org.clapper" %% "grizzled-slf4j" % "1.0.2",
