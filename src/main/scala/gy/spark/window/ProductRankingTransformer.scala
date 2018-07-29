@@ -2,6 +2,7 @@ package gy.spark.window
 
 import java.util.UUID
 
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
@@ -15,26 +16,29 @@ class ProductRankingTransformer(spark: SparkSession) {
     val randUid = udf(() => UUID.randomUUID().toString.substring(0, 5))
 
     val userWindow = Window.partitionBy("userId").orderBy("eventTime")
-    val df = eventsDF
-      .withColumn("prevProduct", lag("product", 1).over(userWindow))
-
     val userProductWindow = Window.partitionBy("userId", "product").orderBy("eventTime")
-    val sessionWindow = Window.partitionBy("sessionId")
+    val sessionWindow = Window.partitionBy("category", "userId", "product", "sessionId").orderBy("eventTime")
 
-    val sessionDF = df.orderBy("category", "userId", "eventTime")
-      .withColumn("isNewSession", when(col("product") === col("prevProduct"), lit(0)).otherwise(lit(1)))
-      .drop("prevProduct")
-      .withColumn("randId", randUid())
-      .orderBy(col("userId"), col("eventTime"), col("isNewSession").desc)
-      .withColumn("sessionId", when(col("isNewSession") === lit(1), col("randId")).otherwise(skewness("randId").over(userProductWindow)))
-//      .drop("randId", "isNewSession")
-//      .withColumn("sessionStartTime", min("eventTime").over(sessionWindow))
-//      .withColumn("sessionEndTime", max("eventTime").over(sessionWindow))
-//      .withColumn("sessionDurationSec", unix_timestamp(col("sessionEndTime")) - unix_timestamp(col("sessionStartTime")))
-//      .drop("sessionStartTime", "sessionEndTime")
-//      .orderBy("category", "userId", "eventTime")
+    val sessionDF = eventsDF
+      .withColumn("firstTS", when(col("product") === lag("product", 1).over(userWindow), lit(null)).otherwise(unix_timestamp(col("eventTime"))))
+      .orderBy(col("category"), col("userId"), col("eventTime"), col("firstTS").desc)
+      .withColumn("sessionStart", last(col("firstTS"), ignoreNulls = true).over(userWindow.rowsBetween(Window.unboundedPreceding, 0)))
+//      .withColumn("sessionStart", last())
+
+//      .withColumn("sessionId", when(col("product") === col("prevProduct"), sessionIterator(lit(0))).otherwise(sessionIterator(lit(1))))
+//      .drop("prevProduct", "isNewSession")
+//    sessionDF.show()
+
     sessionDF
-//    val sumDurationDF = sessionDF
+//      .groupBy("sessionId")
+//      .agg((unix_timestamp(max(col("eventTime"))) - unix_timestamp(min(col("eventTime")))).as("sessionDuration"))
+
+
+    //      .withColumn("sessionDurationSec", unix_timestamp(col("sessionEndTime")) - unix_timestamp(col("sessionStartTime")))
+    //      .drop("sessionStartTime", "sessionEndTime")
+    //      .orderBy("category", "userId", "eventTime")
+
+    //    val sumDurationDF = sessionDF
 //      .select("category", "product", "userId", "sessionId", "sessionDurationSec")
 //      .distinct()
 //
