@@ -17,6 +17,7 @@ object AppLauncher {
 
     val conf = new SparkConf()
       .setAppName("Spark window functions example")
+      .setMaster("local[*]")
     implicit val spark: SparkSession = SparkSession.builder().config(conf).getOrCreate()
 
     val dataLoader = new DataLoader
